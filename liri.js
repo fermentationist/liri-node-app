@@ -5,6 +5,7 @@ const request = require("request");
 //console.log("Twitter consumer key: ", keys.twitterKeys.consumer_key);
 const spotifyID = keys.spotifyKeys.clientID;
 const spotifySecret = keys.spotifyKeys.clientSecret;
+
 /*
 my-tweets
 
@@ -72,10 +73,10 @@ function spotifyThisSong(args){
 	});
 
 	spotify.search({ type: 'track', query: args, limit: 1}, function(err, data) {
-  		if (err) {
-    		return console.log('Error occurred: ' + err);
-  		}
-  		let results = data.tracks.items[0];
+		if (err) {
+			return console.log('Error occurred: ' + err);
+		}
+		let results = data.tracks.items[0];
 		// console.log("\n", results); 
 		let artist = results.artists[0].name;
 		let name = results.name;
@@ -94,7 +95,52 @@ function doWhatItSays(args){
 
 
 function movieThis(args){
-	return console.log("movieThis", args);
+	// * Title of the movie.
+	// * Year the movie came out.
+	// * IMDB Rating of the movie.
+	// * Rotten Tomatoes Rating of the movie.
+	// * Country where the movie was produced.
+	// * Language of the movie.
+	// * Plot of the movie.
+	// * Actors in the movie.
+	const omdbKey = keys.omdbKey;
+	let queryUrl = "http://www.omdbapi.com/?apikey=" + omdbKey + "&s=" + args;
+	request (queryUrl, function (error, response, body){
+		if (error){
+			console.log ("error", error);
+		}
+		let bodyObj = JSON.parse(body);
+		let results = bodyObj.Search[0];
+		let imdbID = results.imdbID;
+		let url = "http://www.omdbapi.com/?apikey=" + omdbKey + "&i=" + imdbID;
+		request (url, function (error, response, body){
+			if(error){
+				console.log("error", error);
+			}
+			console.log("body = ", typeof body);
+			let movieData = JSON.parse(body);
+			console.log('movieData', movieData);
+			let title = movieData.Title;
+			let year = movieData.Year;
+			let imdbRating = movieData.imdbRating;
+			let rottenRating = "not listed";
+			let country = movieData.Country;
+			let language = movieData.Language + "\n";
+			let plot = movieData.Plot + "\n";
+			let actors = movieData.Actors;
+			movieData.Ratings.forEach (function (rating) {
+				if (rating.Source === "Rotten Tomatoes") {
+					rottenRating = rating.Value;
+				}
+			});
+			let movieInfo = {Title: title, Year: year, IMDB_Rating: imdbRating,
+				Rotten_Tomatoes_Rating: rottenRating, Country: country, Language: language,
+				Plot: plot, Actors: actors};
+			return displayResults(movieInfo, "OMDB Results");
+
+		});
+	});
+	return console.log ("movieThis", args);
 }
 
 
@@ -104,7 +150,7 @@ function displayResults(obj, heading = ""){
 	for (prop in obj){
 		console.log(prop,":", obj[prop]);
 	}
-	console.log("\n=========================\n")
+	console.log("=========================\n")
 }
 
 
